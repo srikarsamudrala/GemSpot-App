@@ -40,7 +40,7 @@
 			</h1>
 
 			<p class="mt-4">
-				AdventureLog server encountered an error while processing your request.
+				GemSpot server encountered an error while processing your request.
 				<br />
 				Please check the server logs for more information.
 			</p>

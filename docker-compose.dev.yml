@@ -1,8 +1,8 @@
 services:
   web:
     build: ./frontend/
-    image: ghcr.io/seanmorley15/adventurelog-frontend:latest
-    container_name: adventurelog-frontend
+    image: gemspot-frontend:latest
+    container_name: gemspot-frontend
     restart: unless-stopped
     user: root
     env_file: .env
@@ -19,8 +19,8 @@ services:
     command: sh -c "mkdir -p /pnpm-store && chown -R node:node /pnpm-store && su node -c 'pnpm config set store-dir /pnpm-store && pnpm install --frozen-lockfile && pnpm exec vite dev --host 0.0.0.0 --port 3000 --strictPort'"
 
   db:
-    image: postgis/postgis:16-3.5
-    container_name: adventurelog-db
+    image: postgis/postgis:16-3.4
+    container_name: gemspot-db
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -28,21 +28,24 @@ services:
 
   server:
     build: ./backend/
-    image: ghcr.io/seanmorley15/adventurelog-backend:latest
-    container_name: adventurelog-backend
+    image: gemspot-backend:latest
+    container_name: gemspot-backend
     restart: unless-stopped
     env_file: .env
     environment:
       - DJANGO_SUPERUSER_USERNAME=${DJANGO_ADMIN_USERNAME}
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_ADMIN_PASSWORD}
       - DJANGO_SUPERUSER_EMAIL=${DJANGO_ADMIN_EMAIL}
+      - ML_SERVING_URL=http://ml-serving:8000
     ports:
       - "${BACKEND_PORT:-8016}:8000"
     depends_on:
       - db
+      - ml-serving
     volumes:
       - ./backend/server:/code
-      - adventurelog_media:/code/media/
+      - gemspot_media:/code/media/
+    entrypoint: []
     command: >
       sh -c "memcached -u nobody -m 64 -p 11211 -d;
       until pg_isready -h db -p 5432 >/dev/null 2>&1; do sleep 1; done;
@@ -53,7 +56,36 @@ services:
       fi;
       python manage.py runserver 0.0.0.0:8000"
 
+  # ── GemSpot ML Serving ──────────────────────────────────────────────────
+  ml-serving:
+    build: ./ml-serving/
+    container_name: gemspot-ml-serving
+    restart: unless-stopped
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+    ports:
+      - "${ML_SERVING_PORT:-8050}:8000"
+    volumes:
+      - ./ml-serving/app:/opt/gemspot/app
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: gemspot-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
 volumes:
   postgres_data:
-  adventurelog_media:
+  gemspot_media:
   pnpm_store:

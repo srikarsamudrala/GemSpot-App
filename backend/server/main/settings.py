@@ -320,7 +320,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.UserRateThrottle',
     ],
@@ -395,3 +395,6 @@ COUNTRY_REGION_JSON_VERSION = 'v3.1'
 GOOGLE_MAPS_API_KEY = getenv('GOOGLE_MAPS_API_KEY', '')
 STRAVA_CLIENT_ID = getenv('STRAVA_CLIENT_ID', '')
 STRAVA_CLIENT_SECRET = getenv('STRAVA_CLIENT_SECRET', '')
+
+# GemSpot ML Serving
+ML_SERVING_URL = getenv('ML_SERVING_URL', 'http://localhost:8050')

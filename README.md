@@ -1,192 +1,118 @@
-<div align="center">
+# 🗺️ GemSpot — AI-Powered Travel Recommendation Platform
 
-  <img src="brand/adventurelog.png" alt="logo" width="200" height="auto" />
-  <h1>AdventureLog</h1>
-  
-  <p>
-    The ultimate travel companion for the modern-day explorer.
-  </p>
-   
-<h4>
-    <a href="https://demo.adventurelog.app">View Demo</a>
-  <span> · </span>
-    <a href="https://adventurelog.app">Documentation</a>
-  <span> · </span>
-    <a href="https://discord.gg/wRbQ9Egr8C">Discord</a>
-  <span> · </span>
-    <a href="https://seanmorley.com/sponsor">Support 💖</a>
-  </h4>
-</div>
+> Discover hidden gem destinations using ML-powered recommendations scored by XGBoost.
 
-<br />
+## Architecture
 
-<!-- Table of Contents -->
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   SvelteKit  │───▶│    Django     │───▶│   FastAPI     │
+│   Frontend   │    │   Backend    │    │  ML Serving   │
+│  :8015       │    │  :8016       │    │  :8050        │
+└──────────────┘    └──────┬───────┘    └──────┬───────┘
+                           │                    │
+                    ┌──────▼───────┐    ┌──────▼───────┐
+                    │  PostgreSQL  │    │    Redis      │
+                    │  + PostGIS   │    │  (Features)   │
+                    └──────────────┘    └──────────────┘
+```
 
-# Table of Contents
+## Tech Stack
 
-- [About the Project](#-about-the-project)
-  - [Screenshots](#-screenshots)
-  - [Tech Stack](#-tech-stack)
-  - [Features](#-features)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-  - [Translation](#-translation)
-- [License](#-license)
-- [Contact](#-contact)
-- [Acknowledgements](#-acknowledgements)
-- [Supporters](#-supporters)
+| Layer | Technology |
+|-------|-----------|
+| Frontend | SvelteKit, DaisyUI, MapLibre |
+| Backend API | Django, Django REST Framework, PostGIS |
+| ML Serving | FastAPI, XGBoost, Pydantic |
+| Database | PostgreSQL + PostGIS |
+| Cache/Features | Redis |
+| Orchestration | Docker Compose |
 
-<!-- About the Project -->
+## Quick Start
 
-## ⭐ About the Project
+```bash
+# 1. Clone the repo
+git clone https://github.com/YOUR_USERNAME/gemspot.git
+cd gemspot
 
-Starting from a simple idea of tracking travel locations, AdventureLog has grown into a full-fledged travel companion. With AdventureLog, you can log your adventures, keep track of where you've been on the world map, plan your next trip collaboratively, and share your experiences with friends and family.
+# 2. Create environment file
+cp .env.example .env
 
-AdventureLog was created to solve a problem: the lack of a modern, open-source, user-friendly travel companion. Many existing travel apps are either too complex, too expensive, or too closed-off to be useful for the average traveler. AdventureLog aims to be the opposite: simple, beautiful, and open to everyone.
+# 3. Start all services
+docker compose -f docker-compose.dev.yml up --build
 
-<!-- Screenshots -->
+# 4. Open the app
+open http://localhost:8015
+# Login: admin / admin
+```
 
-### 📷 Screenshots
+## Services
 
-<div align="center"> 
-  <img src="./brand/screenshots/adventures.png" alt="Locations" />
-  <p>Displays the locations you have visited and the ones you plan to embark on. You can also filter and sort the locations.</p>
-  <img src="./brand/screenshots/details.png" alt="Location Details" />
-  <p>Shows specific details about a location, including the name, date, location, description, and rating.</p>
-  <img src="./brand/screenshots/edit.png" alt="Edit Modal" />
-  <img src="./brand/screenshots/map.png" alt="Location Details" />
-  <p>View all of your locations on a map, with the ability to filter by visit status and add new ones by click on the map</p>
-  <img src="./brand/screenshots/map-satellite.png" alt="Location Details" />
-  <p>View a 3D representation of your locations and activities on the map, allowing for a more immersive exploration of your travel history.</p>
-  <img src="./brand/screenshots/dashboard.png" alt="Dashboard" />
-  <p>Displays a summary of your locations, including your world travel stats.</p>
-  <img src="./brand/screenshots/itinerary.png" alt="Itinerary" />
-  <p>Plan your adventures and travel itinerary with a list of activities and a map view. View your trip in a variety of ways, including an itinerary list, a map view, and a calendar view. Order your plans and details to create the perfect trip.</p>
-  <img src="./brand/screenshots/countries.png" alt="Countries" />
-  <p>Lists all the countries you have visited and plan to visit, with the ability to filter by visit status.</p>
-  <img src="./brand/screenshots/regions.png" alt="Regions" />
-  <p>Displays the regions for a specific country, includes a map view to visually select regions.</p>
-</div>
+| Service | Port | Description |
+|---------|------|-------------|
+| Frontend | 8015 | SvelteKit web app |
+| Backend | 8016 | Django REST API |
+| ML Serving | 8050 | FastAPI + XGBoost inference |
+| PostgreSQL | 5432 | Database with PostGIS |
+| Redis | 6379 | Feature store & cache |
 
-<!-- TechStack -->
+## ML Pipeline
 
-### 🚀 Tech Stack
+GemSpot uses a **two-stage recommendation pipeline**:
 
-<details>
-  <summary>Client</summary>
-  <ul>
-    <li><a href="https://svelte.dev/">SvelteKit</a></li>
-    <li><a href="https://tailwindcss.com/">TailwindCSS</a></li>
-    <li><a href="https://daisyui.com/">DaisyUI</a></li>
-    <li><a href="https://github.com/dimfeld/svelte-maplibre/">Svelte MapLibre</a></li>
-  </ul>
-</details>
+1. **Candidate Generation** — PostGIS spatial queries find destinations within a search radius
+2. **ML Scoring** — XGBoost model scores candidates using a 25-feature vector:
+   - 5 scalar features (category, rating, reviews, price, user visits)
+   - 10 vibe tag features (scenic, relaxing, adventurous, cultural, etc.)
+   - 10 user preference features
 
-<details>
-  <summary>Server</summary>
-  <ul>
-    <li><a href="https://www.djangoproject.com/">Django</a></li>
-    <li><a href="https://postgis.net/">PostGIS</a></li>
-    <li><a href="https://www.django-rest-framework.org/">Django REST Framework</a></li>
-    <li><a href="https://allauth.org/">AllAuth</a></li>
-  </ul>
-</details>
-<!-- Features -->
+### Testing the ML Service
 
-### 🎯 Features
+```bash
+# Health check
+curl http://localhost:8050/health
 
-- **Track Your Adventures** 🌍: Log your adventures and keep track of where you've been on the world map.
-  - Locations can store a variety of information, including the location, date, and description.
-  - Locations can be sorted into custom categories for easy organization.
-  - Locations can be marked as private or public, allowing you to share your adventures with friends and family.
-  - Keep track of the countries and regions you've visited with the world travel book.
-  - Upload trails and activities to your locations to remember your experiences with detailed maps and stats.
-- **Plan Your Next Trip** 📃: Take the guesswork out of planning your next adventure with an easy-to-use itinerary planner.
-  - Itineraries can be created for any number of days and can include multiple destinations.
-  - Itineraries include many planning features like flight information, notes, checklists, and links to external resources.
-  - Itineraries can be shared with friends and family for collaborative planning.
-- **Share Your Experiences** 📸: Share your adventures with friends and family and collaborate on trips together.
-  - Locations and itineraries can be shared via a public link or directly with other AdventureLog users.
-  - Collaborators can view and edit shared itineraries (collections), making planning a breeze.
+# Run inference
+curl -X POST http://localhost:8050/recommend \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "test",
+    "latitude": 40.7128,
+    "longitude": -74.006,
+    "candidates": [{
+      "gmap_id": "1",
+      "name": "Central Park",
+      "latitude": 40.7829,
+      "longitude": -73.9654,
+      "category": "park",
+      "avg_rating": 4.8,
+      "num_reviews": 50000,
+      "price": 0,
+      "vibe_tags": ["scenic", "relaxing", "family-friendly"]
+    }]
+  }'
+```
 
-<!-- Roadmap -->
+## Project Structure
 
-## 🧭 Roadmap
+```
+gemspot/
+├── frontend/          # SvelteKit web application
+├── backend/           # Django REST API
+├── ml-serving/        # FastAPI ML inference service
+│   ├── app/
+│   │   ├── main.py    # FastAPI endpoints
+│   │   ├── model.py   # XGBoost model & feature engineering
+│   │   ├── schemas.py # Pydantic request/response models
+│   │   └── vibe_tags.py # Vibe tag vocabulary & encoding
+│   ├── scripts/
+│   │   └── generate_mock_model.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── docker-compose.dev.yml
+└── .env.example
+```
 
-The AdventureLog Roadmap can be found [here](https://github.com/users/seanmorley15/projects/5)
+## License
 
-<!-- Contributing -->
-
-## 👋 Contributing
-
-<a href="https://github.com/seanmorley15/AdventureLog/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=seanmorley15/AdventureLog" />
-</a>
-
-Contributions are always welcome!
-
-See `contributing.md` for ways to get started.
-
-### Translation
-
-AdventureLog is available on [Weblate](https://hosted.weblate.org/projects/adventurelog/). If you would like to help translate AdventureLog into your language, please visit the link and contribute!
-
-<a href="https://hosted.weblate.org/engage/adventurelog/">
-<img src="https://hosted.weblate.org/widget/adventurelog/multi-auto.svg" alt="Translation status" />
-</a>
-
-<!-- License -->
-
-## 📃 License
-
-Distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
-
-<!-- Contact -->
-
-## 🤝 Contact
-
-Sean Morley - [website](https://seanmorley.com)
-
-Hi! I'm Sean, the creator of AdventureLog. I'm a college student and software developer with a passion for travel and adventure. I created AdventureLog to help people like me document their adventures and plan new ones effortlessly. As a student, I am always looking for more opportunities to learn and grow, so feel free to reach out via the contact on my website if you would like to collaborate or chat!
-
-<!-- Acknowledgments -->
-
-## 💎 Acknowledgements
-
-- Logo Design by [nordtektiger](https://github.com/nordtektiger)
-- WorldTravel Dataset [dr5hn/countries-states-cities-database](https://github.com/dr5hn/countries-states-cities-database)
-
-## 💖 Supporters
-
-AdventureLog is built and maintained as an open-source project. These incredible supporters help make continued development possible.
-
-### 🏢 Corporate Sponsors
-
-<p align="left">
-  <a href="https://www.hostinger.com/">
-    <img src="https://raw.githubusercontent.com/hostinger/logo/refs/heads/master/v3/h-icon.png" alt="Hostinger" height="60"><br />
-    Hostinger
-  </a>
-</p>
-
-### 🌟 Individual Supporters
-
-Huge thanks to these amazing people supporting the project:
-
-- Veymax
-- [Mathias Ponnwitz](https://github.com/Solution-Partner-Mathias-Ponnwitz)
-- [nebriv](https://github.com/nebriv)
-- [Miguel Cruz](https://github.com/Tokynet)
-- [Victor Butler](https://x.com/victor_butler)
-
-### 🚀 Become a Supporter
-
-If you enjoy AdventureLog and want to support its development, consider becoming a sponsor.
-
-Your support helps fund:
-
-- 🚀 New features and improvements
-- 🖥️ Infrastructure and hosting costs
-- 🌍 Continued open-source development
-
-[Become a Sponsor](https://seanmorley.com/sponsor) to help keep AdventureLog thriving!
+This project is built for educational purposes as part of an MLOps course project.

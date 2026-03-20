@@ -19,6 +19,7 @@
 	import CollectionAllItems from '$lib/components/collections/CollectionAllItems.svelte';
 	import CollectionItineraryPlanner from '$lib/components/collections/CollectionItineraryPlanner.svelte';
 	import CollectionRecommendationView from '$lib/components/CollectionRecommendationView.svelte';
+	import GemSpotView from '$lib/components/GemSpotView.svelte';
 	import CollectionMap from '$lib/components/collections/CollectionMap.svelte';
 	import CollectionStats from '$lib/components/collections/CollectionStats.svelte';
 	import LocationLink from '$lib/components/LocationLink.svelte';
@@ -170,7 +171,7 @@
 	}
 
 	// View state from URL params
-	type ViewType = 'all' | 'itinerary' | 'map' | 'calendar' | 'recommendations' | 'stats';
+	type ViewType = 'all' | 'itinerary' | 'map' | 'calendar' | 'recommendations' | 'gemspot' | 'stats';
 	let currentView: ViewType = 'itinerary';
 
 	// Determine if this is a folder view (no dates) or itinerary view (has dates)
@@ -206,6 +207,7 @@
 			false,
 		calendar: !isFolderView,
 		recommendations: true, // may be overridden by permission check below
+		gemspot: true, // may be overridden by permission check below
 		stats: true
 	};
 
@@ -218,7 +220,7 @@
 		const view = $page.url.searchParams.get('view') as ViewType;
 		if (
 			view &&
-			['all', 'itinerary', 'map', 'calendar', 'recommendations', 'stats'].includes(view) &&
+			['all', 'itinerary', 'map', 'calendar', 'recommendations', 'gemspot', 'stats'].includes(view) &&
 			availableViews[view]
 		) {
 			currentView = view;
@@ -254,6 +256,7 @@
 
 	// Enforce recommendations visibility only for owner/shared users
 	$: availableViews.recommendations = !!canModifyCollection;
+	$: availableViews.gemspot = !!canModifyCollection;
 
 	// Build calendar events from collection visits
 	type TimezoneMode = 'event' | 'local';
@@ -1138,6 +1141,16 @@
 						<span class="hidden sm:inline">{$t('recomendations.recommendations')}</span>
 					</button>
 				{/if}
+				{#if availableViews.gemspot}
+					<button
+						class="btn join-item"
+						class:btn-active={currentView === 'gemspot'}
+						on:click={() => switchView('gemspot')}
+					>
+						<span class="w-5 h-5 sm:mr-2" aria-hidden="true">🤖</span>
+						<span class="hidden sm:inline">GemSpot AI</span>
+					</button>
+				{/if}
 				{#if availableViews.stats}
 					<button
 						class="btn join-item"
@@ -1260,6 +1273,11 @@
 				<!-- Recommendations View -->
 				{#if currentView === 'recommendations'}
 					<CollectionRecommendationView bind:collection user={data.user} />
+				{/if}
+
+				<!-- GemSpot AI View -->
+				{#if currentView === 'gemspot'}
+					<GemSpotView bind:collection user={data.user} />
 				{/if}
 			</div>
 

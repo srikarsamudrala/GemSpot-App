@@ -1,0 +1,46 @@
+{
+  "gem_cards": [
+    {
+      "gmap_id": "loc_2",
+      "name": "The Met Museum",
+      "latitude": 40.7794,
+      "longitude": -73.9632,
+      "score": 0.9234,
+      "confidence_pct": "92%",
+      "vibe_tags": ["cultural", "historic", "scenic"],
+      "category": "museum",
+      "distance_km": 8.42,
+      "avg_rating": 4.9,
+      "num_reviews": 75000
+    },
+    {
+      "gmap_id": "loc_1",
+      "name": "Central Park",
+      "latitude": 40.7829,
+      "longitude": -73.9654,
+      "score": 0.9012,
+      "confidence_pct": "90%",
+      "vibe_tags": ["scenic", "relaxing", "family-friendly"],
+      "category": "park",
+      "distance_km": 8.51,
+      "avg_rating": 4.8,
+      "num_reviews": 50000
+    },
+    {
+      "gmap_id": "loc_3",
+      "name": "Joe's Pizza",
+      "latitude": 40.7306,
+      "longitude": -74.0023,
+      "score": 0.7741,
+      "confidence_pct": "77%",
+      "vibe_tags": ["foodie", "trendy", "nightlife"],
+      "category": "restaurant",
+      "distance_km": 2.02,
+      "avg_rating": 4.5,
+      "num_reviews": 8000
+    }
+  ],
+  "model_version": "mock-v1.0",
+  "inference_time_ms": 3.4,
+  "candidates_scored": 3
+}

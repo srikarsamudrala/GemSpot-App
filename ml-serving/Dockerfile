@@ -16,7 +16,8 @@ COPY . .
 
 # Generate mock model (will be overridden by real model via volume mount)
 RUN mkdir -p /models \
-    && python scripts/generate_mock_model.py /models/gemspot_xgb.json
+    && python scripts/generate_mock_model.py /models/gemspot_xgb.json \
+    && python scripts/export_onnx_model.py --input /models/gemspot_xgb.json --output /models/gemspot_xgb.onnx
 
 # ── Runtime stage ───────────────────────────────────────────────────────────
 FROM python:3.13-slim
@@ -30,9 +31,12 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy app code and model
 COPY --from=builder /opt/gemspot/app ./app
+COPY --from=builder /opt/gemspot/scripts ./scripts
 COPY --from=builder /models /models
 
 ENV MODEL_PATH=/models/gemspot_xgb.json
+ENV ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+ENV SERVING_BACKEND=xgboost
 ENV LOG_LEVEL=INFO
 
 EXPOSE 8000

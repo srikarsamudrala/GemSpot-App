@@ -78,6 +78,8 @@ class HealthResponse(BaseModel):
 
 class ModelInfoResponse(BaseModel):
     model_version: str
+    serving_backend: str
+    model_loaded: bool
     feature_names: List[str]
     num_vibe_tags: int
     vibe_tag_vocabulary: List[str]

@@ -1,0 +1,46 @@
+services:
+  ml-serving-baseline:
+    build: .
+    container_name: gemspot-ml-serving-baseline
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - SERVING_BACKEND=xgboost
+      - LOG_LEVEL=INFO
+    ports:
+      - "8050:8000"
+
+  ml-serving-workers2:
+    build: .
+    container_name: gemspot-ml-serving-workers2
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - SERVING_BACKEND=xgboost
+      - LOG_LEVEL=INFO
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    ports:
+      - "8051:8000"
+
+  ml-serving-onnx:
+    build: .
+    container_name: gemspot-ml-serving-onnx
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - SERVING_BACKEND=onnx
+      - LOG_LEVEL=INFO
+    ports:
+      - "8052:8000"
+
+  ml-serving-onnx-workers4:
+    build: .
+    container_name: gemspot-ml-serving-onnx-workers4
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - SERVING_BACKEND=onnx
+      - LOG_LEVEL=INFO
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    ports:
+      - "8053:8000"

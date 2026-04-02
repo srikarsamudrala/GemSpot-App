@@ -69,6 +69,8 @@ async def health():
 async def model_info():
     return ModelInfoResponse(
         model_version=MODEL_VERSION,
+        serving_backend=model.backend,
+        model_loaded=model.is_loaded,
         feature_names=ALL_FEATURE_NAMES,
         num_vibe_tags=NUM_VIBE_TAGS,
         vibe_tag_vocabulary=VIBE_TAGS,

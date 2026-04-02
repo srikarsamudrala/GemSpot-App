@@ -1,0 +1,43 @@
+{
+  "user_id": "demo_user_001",
+  "latitude": 40.7128,
+  "longitude": -74.006,
+  "candidates": [
+    {
+      "gmap_id": "loc_1",
+      "name": "Central Park",
+      "latitude": 40.7829,
+      "longitude": -73.9654,
+      "category": "park",
+      "avg_rating": 4.8,
+      "num_reviews": 50000,
+      "price": 0,
+      "vibe_tags": ["scenic", "relaxing", "family-friendly"]
+    },
+    {
+      "gmap_id": "loc_2",
+      "name": "The Met Museum",
+      "latitude": 40.7794,
+      "longitude": -73.9632,
+      "category": "museum",
+      "avg_rating": 4.9,
+      "num_reviews": 75000,
+      "price": 2,
+      "vibe_tags": ["cultural", "historic", "scenic"]
+    },
+    {
+      "gmap_id": "loc_3",
+      "name": "Joe's Pizza",
+      "latitude": 40.7306,
+      "longitude": -74.0023,
+      "category": "restaurant",
+      "avg_rating": 4.5,
+      "num_reviews": 8000,
+      "price": 1,
+      "vibe_tags": ["foodie", "trendy", "nightlife"]
+    }
+  ],
+  "top_k": 10,
+  "user_total_visits": 5,
+  "user_personal_preferences": [10.0, 5.0, 0.0, 8.0, 0.0, 3.0, 0.0, 7.0, 2.0, 0.0]
+}

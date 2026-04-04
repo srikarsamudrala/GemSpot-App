@@ -16,7 +16,28 @@ import onnxmltools
 import xgboost as xgb
 from onnxconverter_common.data_types import FloatTensorType
 
-from app.model import ALL_FEATURE_NAMES
+VIBE_TAGS = [
+    "scenic",
+    "relaxing",
+    "adventurous",
+    "cultural",
+    "romantic",
+    "family-friendly",
+    "nightlife",
+    "foodie",
+    "historic",
+    "trendy",
+]
+SCALAR_FEATURES = [
+    "category_encoded",
+    "avg_rating",
+    "num_reviews",
+    "price",
+    "user_total_visits",
+]
+VIBE_FEATURE_NAMES = [f"vibe_{tag}" for tag in VIBE_TAGS]
+PREF_FEATURE_NAMES = [f"pref_{tag}" for tag in VIBE_TAGS]
+ALL_FEATURE_NAMES = SCALAR_FEATURES + VIBE_FEATURE_NAMES + PREF_FEATURE_NAMES
 
 
 def export_model(input_path: str, output_path: str) -> None:

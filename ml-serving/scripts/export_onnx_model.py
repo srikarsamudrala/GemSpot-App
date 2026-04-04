@@ -14,7 +14,7 @@ from pathlib import Path
 
 import onnxmltools
 import xgboost as xgb
-from onnxconverter_common.data_types import FloatTensorType
+from onnxmltools.convert.common.data_types import FloatTensorType
 
 VIBE_TAGS = [
     "scenic",

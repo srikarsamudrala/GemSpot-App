@@ -43,6 +43,9 @@ ALL_FEATURE_NAMES = SCALAR_FEATURES + VIBE_FEATURE_NAMES + PREF_FEATURE_NAMES
 def export_model(input_path: str, output_path: str) -> None:
     booster = xgb.Booster()
     booster.load_model(input_path)
+    # The ONNX converter expects XGBoost feature names in the default f0/f1/...
+    # format, so normalize them only for export.
+    booster.feature_names = [f"f{i}" for i in range(len(ALL_FEATURE_NAMES))]
     initial_types = [("input", FloatTensorType([None, len(ALL_FEATURE_NAMES)]))]
     onnx_model = onnxmltools.convert_xgboost(booster, initial_types=initial_types, target_opset=13)
 

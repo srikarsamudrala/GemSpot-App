@@ -98,7 +98,12 @@ services:
     environment:
       - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
       - LOG_LEVEL=INFO
-    command: ["serve", "run", "app.ray_serve_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    command:
+      [
+        "sh",
+        "-c",
+        "ray start --head --disable-usage-stats --dashboard-host=0.0.0.0 && serve start --http-host 0.0.0.0 --http-port 8000 && serve run app.ray_serve_app:app"
+      ]
     ports:
       - "8055:8000"
 

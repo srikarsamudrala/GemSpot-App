@@ -20,6 +20,7 @@ submission path adds multiple measured serving variants:
 - `xgboost_workers2`: XGBoost + FastAPI, 2 workers
 - `onnx_cpu`: ONNX Runtime + FastAPI, 1 worker
 - `onnx_workers4`: ONNX Runtime + FastAPI, 4 workers
+- `triton_batch`: Triton Inference Server + FastAPI proxy
 - `infra_rightsized`: rerun the best configuration on a second VM size
 
 ### 2. Files That Matter
@@ -31,6 +32,7 @@ Core serving artifacts:
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/app/main.py`
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/app/model.py`
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/scripts/export_onnx_model.py`
+- `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/triton/model_repository/gemspot_onnx/config.pbtxt`
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/benchmark_latency.py`
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/locustfile.py`
 - `/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/summarize_serving_runs.py`
@@ -55,9 +57,11 @@ instance allows inbound traffic on these ports:
 - `8051` for 2-worker XGBoost
 - `8052` for ONNX serving
 - `8053` for ONNX + 4 workers
+- `8054` for Triton-backed FastAPI proxy
+- `8060` for Triton HTTP
 - `8089` for the Locust UI, if you want to show it in the demo
 
-You can use one VM for the first four rows, then launch a second VM flavor
+You can use one VM for the first five rows, then launch a second VM flavor
 for the infrastructure comparison row.
 
 ### 4. SSH Into The VM
@@ -88,7 +92,7 @@ cd AdventureLog/ml-serving
 
 ### 6. Build And Start Experiment Variants
 
-Run all four serving variants:
+Run all serving variants:
 
 ```bash
 docker compose -f docker-compose.experiments.yml up -d --build
@@ -101,6 +105,7 @@ curl http://<floating-ip>:8050/health
 curl http://<floating-ip>:8051/health
 curl http://<floating-ip>:8052/health
 curl http://<floating-ip>:8053/health
+curl http://<floating-ip>:8054/health
 ```
 
 Check the backend for each:
@@ -108,10 +113,12 @@ Check the backend for each:
 ```bash
 curl http://<floating-ip>:8050/model/info
 curl http://<floating-ip>:8052/model/info
+curl http://<floating-ip>:8054/model/info
+curl http://<floating-ip>:8060/v2/models/gemspot_onnx
 ```
 
 You should see `serving_backend` report `xgboost` for `8050` and `onnx`
-for `8052`.
+for `8052`, and `triton` for `8054`.
 
 ### 7. Run Benchmarks For Each Row
 
@@ -190,6 +197,22 @@ python tests/summarize_serving_runs.py \
   --output onnx_workers4_summary.json
 ```
 
+Triton-backed serving:
+
+```bash
+python tests/benchmark_latency.py --url http://<floating-ip>:8054 --rounds 50
+mv benchmark_results.json triton_benchmark.json
+
+locust -f tests/locustfile.py --host http://<floating-ip>:8054 \
+  --headless -u 50 -r 10 --run-time 60s --csv triton
+
+python tests/summarize_serving_runs.py \
+  --label triton_batch \
+  --benchmark triton_benchmark.json \
+  --locust-csv-prefix triton \
+  --output triton_summary.json
+```
+
 ### 8. Capture Right-Sizing Evidence
 
 While a load test is running, record observed resource usage:
@@ -225,6 +248,7 @@ Suggested row mapping:
 - `xgboost_workers2` -> port `8051`
 - `onnx_cpu` -> port `8052`
 - `onnx_workers4` -> port `8053`
+- `triton_batch` -> port `8054`
 - `infra_rightsized` -> rerun best row on another instance type
 
 Then export the filled markdown/table to PDF for `Q2.1`.
@@ -255,6 +279,7 @@ Upload the files that produced your table rows:
 - `ml-serving/app/main.py`
 - `ml-serving/app/model.py`
 - `ml-serving/scripts/export_onnx_model.py`
+- `ml-serving/triton/model_repository/gemspot_onnx/config.pbtxt`
 - `ml-serving/tests/benchmark_latency.py`
 - `ml-serving/tests/locustfile.py`
 - `ml-serving/tests/summarize_serving_runs.py`
@@ -266,6 +291,7 @@ Use the text box to explain:
 - XGBoost worker row came from `ml-serving-workers2`
 - ONNX row came from `ml-serving-onnx`
 - ONNX worker row came from `ml-serving-onnx-workers4`
+- Triton row came from `triton-server` plus `ml-serving-triton`
 - latency came from `benchmark_latency.py`
 - throughput/error-rate came from `locustfile.py`
 - summary values came from `summarize_serving_runs.py`
@@ -276,9 +302,9 @@ Record a short Chameleon demo showing:
 
 1. SSH session on the VM
 2. `docker compose -f docker-compose.experiments.yml up -d --build`
-3. `curl http://<floating-ip>:8052/health`
-4. `curl http://<floating-ip>:8052/model/info`
-5. `curl -X POST http://<floating-ip>:8052/recommend -H "Content-Type: application/json" -d @/path/to/serving_input.json`
+3. `curl http://<floating-ip>:8054/health`
+4. `curl http://<floating-ip>:8054/model/info`
+5. `curl -X POST http://<floating-ip>:8054/recommend -H "Content-Type: application/json" -d @/path/to/serving_input.json`
 6. one short benchmark or Locust run
 
 ### 11. Recommended Story For The Report
@@ -290,6 +316,7 @@ Use language like this:
 - `onnx_cpu` tests model-level optimization by switching to an optimized
   artifact/runtime
 - `onnx_workers4` tests combined model-level and system-level optimization
+- `triton_batch` tests a dedicated serving framework with dynamic batching
 - `infra_rightsized` tests infrastructure-level optimization by changing VM
   size while keeping the serving stack constant
 

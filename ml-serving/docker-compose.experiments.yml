@@ -1,4 +1,17 @@
 services:
+  triton-repo-init:
+    build: .
+    container_name: gemspot-triton-repo-init
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /triton-models/gemspot_onnx/1 && cp /models/gemspot_xgb.onnx /triton-models/gemspot_onnx/1/model.onnx && cp /opt/gemspot/triton/model_repository/gemspot_onnx/config.pbtxt /triton-models/gemspot_onnx/config.pbtxt"
+      ]
+    restart: "no"
+    volumes:
+      - triton_model_repo:/triton-models
+
   ml-serving-baseline:
     build: .
     container_name: gemspot-ml-serving-baseline
@@ -44,3 +57,50 @@ services:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     ports:
       - "8053:8000"
+
+  triton-server:
+    image: nvcr.io/nvidia/tritonserver:24.11-py3
+    container_name: gemspot-triton-server
+    depends_on:
+      - triton-repo-init
+    command:
+      [
+        "tritonserver",
+        "--model-repository=/models",
+        "--http-port=8000",
+        "--grpc-port=8001",
+        "--metrics-port=8002"
+      ]
+    ports:
+      - "8060:8000"
+      - "8061:8001"
+    volumes:
+      - triton_model_repo:/models
+
+  ml-serving-triton:
+    build: .
+    container_name: gemspot-ml-serving-triton
+    depends_on:
+      - triton-server
+    environment:
+      - MODEL_PATH=/models/gemspot_xgb.json
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - SERVING_BACKEND=triton
+      - TRITON_URL=http://triton-server:8000
+      - TRITON_MODEL_NAME=gemspot_onnx
+      - LOG_LEVEL=INFO
+    ports:
+      - "8054:8000"
+
+  ml-serving-rayserve:
+    build: .
+    container_name: gemspot-ml-serving-rayserve
+    environment:
+      - ONNX_MODEL_PATH=/models/gemspot_xgb.onnx
+      - LOG_LEVEL=INFO
+    command: ["serve", "run", "app.ray_serve_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8055:8000"
+
+volumes:
+  triton_model_repo:

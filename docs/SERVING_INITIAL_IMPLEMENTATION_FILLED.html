@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GemSpot Serving Initial Implementation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 28px;
+      color: #111827;
+      line-height: 1.45;
+      font-size: 12px;
+    }
+    h1, h2 {
+      margin: 0 0 10px;
+      color: #0f172a;
+    }
+    h1 { font-size: 24px; }
+    h2 { font-size: 16px; margin-top: 22px; }
+    p, ul { margin: 8px 0; }
+    ul { padding-left: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 7px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #e2e8f0;
+    }
+    .muted {
+      color: #475569;
+    }
+    code {
+      font-family: SFMono-Regular, Menlo, monospace;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>GemSpot Serving Initial Implementation</h1>
+  <p>This document captures the current serving-role submission status for the GemSpot initial implementation using measurements collected on Chameleon.</p>
+
+  <h2>1) Shared Interface Samples</h2>
+  <ul>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/docs/samples/serving_input.json</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/docs/samples/serving_output.json</code></li>
+  </ul>
+  <p>The service experiments below compare different deployment and runtime configurations for the same recommendation model interface.</p>
+
+  <h2>2) Serving Options Table</h2>
+  <p>Measured on Chameleon Cloud using floating IP <code>129.114.27.244</code>.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Option ID</th>
+        <th>Description</th>
+        <th>Endpoint</th>
+        <th>Model Version</th>
+        <th>Code Version</th>
+        <th>Hardware</th>
+        <th>P50 (ms)</th>
+        <th>P95 (ms)</th>
+        <th>P99 (ms)</th>
+        <th>Throughput (req/s)</th>
+        <th>Error Rate</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>baseline_http</code></td>
+        <td>FastAPI + XGBoost, 1 worker</td>
+        <td><code>http://129.114.27.244:8050/recommend</code></td>
+        <td><code>mock-v1.0</code></td>
+        <td><code>182836a9</code></td>
+        <td>CPU</td>
+        <td>4.91</td>
+        <td>9.92</td>
+        <td>11.06</td>
+        <td>38.64</td>
+        <td>0</td>
+        <td>Best throughput, simplest baseline</td>
+      </tr>
+      <tr>
+        <td><code>xgboost_workers2</code></td>
+        <td>FastAPI + XGBoost, 2 workers</td>
+        <td><code>http://129.114.27.244:8051/recommend</code></td>
+        <td><code>mock-v1.0</code></td>
+        <td><code>182836a9</code></td>
+        <td>CPU</td>
+        <td>5.10</td>
+        <td>9.70</td>
+        <td>9.86</td>
+        <td>15.42</td>
+        <td>0</td>
+        <td>Slightly better tail latency, much lower throughput</td>
+      </tr>
+      <tr>
+        <td><code>onnx_cpu</code></td>
+        <td>ONNX Runtime + FastAPI, 1 worker</td>
+        <td><code>http://129.114.27.244:8052/recommend</code></td>
+        <td><code>mock-v1.0</code></td>
+        <td><code>182836a9</code></td>
+        <td>CPU</td>
+        <td>4.02</td>
+        <td>4.19</td>
+        <td>4.44</td>
+        <td>15.12</td>
+        <td>0</td>
+        <td>Best latency, strongest model-level optimization</td>
+      </tr>
+      <tr>
+        <td><code>onnx_workers4</code></td>
+        <td>ONNX Runtime + FastAPI, 4 workers</td>
+        <td><code>http://129.114.27.244:8053/recommend</code></td>
+        <td><code>mock-v1.0</code></td>
+        <td><code>182836a9</code></td>
+        <td>CPU</td>
+        <td>4.07</td>
+        <td>4.35</td>
+        <td>5.87</td>
+        <td>15.77</td>
+        <td>0</td>
+        <td>Combined optimization, slightly better throughput than ONNX 1-worker</td>
+      </tr>
+      <tr>
+        <td><code>infra_rightsized</code></td>
+        <td><code>onnx_cpu</code> rerun on second Chameleon VM flavor</td>
+        <td><code>http://129.114.27.109:8052/recommend</code></td>
+        <td><code>mock-v1.0</code></td>
+        <td><code>182836a9</code></td>
+        <td>CPU</td>
+        <td>4.29</td>
+        <td>4.45</td>
+        <td>5.07</td>
+        <td>15.67</td>
+        <td>0</td>
+        <td>Infrastructure comparison row; assuming second VM flavor was <code>m1.large</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3) Interpretation And Recommendation</h2>
+  <ul>
+    <li>Best throughput: <code>baseline_http</code></li>
+    <li>Best latency: <code>onnx_cpu</code></li>
+    <li>Best overall recommended deployment: <code>onnx_cpu</code></li>
+  </ul>
+  <p><span class="muted">Reasoning:</span> <code>baseline_http</code> provides the highest throughput and simplest deployment. <code>onnx_cpu</code> cuts latency substantially versus both XGBoost variants. <code>onnx_workers4</code> only slightly improves throughput over <code>onnx_cpu</code>, so <code>onnx_cpu</code> is the clearest recommended option on the current VM flavor. The <code>infra_rightsized</code> run shows that moving the ONNX configuration to the second VM flavor did not materially improve latency or throughput, which supports keeping the smaller CPU flavor as the better right-sized choice.</p>
+
+  <h2>4) Right-Sizing Notes</h2>
+  <ul>
+    <li>Primary VM flavor: baseline Chameleon CPU flavor used for the first set of measurements</li>
+    <li>Comparison VM flavor: assumed <code>m1.large</code> based on the second lease context</li>
+    <li>CPU usage under representative load: collected during <code>docker stats</code> and <code>top</code></li>
+    <li>RAM usage under representative load: collected during <code>free -h</code></li>
+    <li>GPU usage: <code>N/A</code></li>
+    <li>Final recommendation: the ONNX configuration on the smaller CPU flavor is the better right-sized deployment because the larger VM did not produce a meaningful latency or throughput gain</li>
+  </ul>
+
+  <h2>5) Repository Artifacts Used</h2>
+  <ul>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/Dockerfile</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/docker-compose.experiments.yml</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/app/main.py</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/app/model.py</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/scripts/export_onnx_model.py</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/benchmark_latency.py</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/locustfile.py</code></li>
+    <li><code>/Users/srikarsamudrala/Documents/AdventureLog/ml-serving/tests/summarize_serving_runs.py</code></li>
+  </ul>
+
+  <h2>6) Submission Status</h2>
+  <ul>
+    <li>Ready now: Q1 shared JSON samples, Q2.2 repository artifacts, and a Q2.1 serving options table draft with infrastructure comparison included</li>
+    <li>Still pending: finalized CPU/RAM right-sizing note from screenshots and Q2.3 demo video</li>
+  </ul>
+</body>
+</html>
